@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Edit3, Trash2, Save, FolderOpen, FileText, Sparkles, Calendar } from 'lucide-react';
+import { X, Edit3, Trash2, Save, FolderOpen, FileText, Sparkles, Calendar, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,14 +8,15 @@ import { cn } from '@/lib/utils';
 
 interface NodePanelProps {
   node: MindmapNode;
-  children: MindmapNode[];
+  childNodes: MindmapNode[];
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<Pick<MindmapNode, 'title' | 'content' | 'color'>>) => void;
   onDelete: (id: string) => void;
   onSelectChild: (id: string) => void;
+  onAddChild: (parentId: string) => void;
 }
 
-export function NodePanel({ node, children, onClose, onUpdate, onDelete, onSelectChild }: NodePanelProps) {
+export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSelectChild, onAddChild }: NodePanelProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(node.title);
   const [content, setContent] = useState(node.content);
@@ -110,13 +111,27 @@ export function NodePanel({ node, children, onClose, onUpdate, onDelete, onSelec
           </>
         )}
 
+        {/* Add child button */}
+        {node.type !== 'post' && !editing && (
+          <div className="pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => onAddChild(node.id)}
+            >
+              <Plus size={14} /> 하위 노드 추가
+            </Button>
+          </div>
+        )}
+
         {/* Children list */}
-        {children.length > 0 && !editing && (
+        {childNodes.length > 0 && !editing && (
           <div className="pt-4 border-t border-border space-y-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              하위 노드 ({children.length})
+              하위 노드 ({childNodes.length})
             </h3>
-            {children.map(child => (
+            {childNodes.map(child => (
               <button
                 key={child.id}
                 onClick={() => onSelectChild(child.id)}

@@ -8,13 +8,11 @@ interface MindmapNodeData {
   nodeType: 'root' | 'category' | 'post';
   color: string;
   highlight: 'match' | 'path' | 'sibling' | 'fade' | 'none';
-  onAddChild: (id: string) => void;
-  onSelect: (id: string) => void;
   nodeId: string;
 }
 
 function MindmapNodeComponent({ data }: NodeProps) {
-  const { label, nodeType, color, highlight, onAddChild, onSelect, nodeId } = data as unknown as MindmapNodeData;
+  const { label, nodeType, color, highlight, nodeId } = data as unknown as MindmapNodeData;
   const [hovered, setHovered] = useState(false);
 
   const Icon = nodeType === 'root' ? Sparkles : nodeType === 'category' ? FolderOpen : FileText;
@@ -35,7 +33,6 @@ function MindmapNodeComponent({ data }: NodeProps) {
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => onSelect(nodeId)}
     >
       <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-border !border-none" />
 
@@ -75,9 +72,18 @@ function MindmapNodeComponent({ data }: NodeProps) {
             'bg-card text-muted-foreground border-border hover:text-primary hover:border-primary hover:scale-110',
             hovered ? 'opacity-100' : 'opacity-0'
           )}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
           onClick={(e) => {
             e.stopPropagation();
-            onAddChild(nodeId);
+            e.nativeEvent.stopImmediatePropagation();
+            window.dispatchEvent(new CustomEvent('mindmap-add-child', { detail: { parentId: nodeId } }));
           }}
         >
           <Plus size={14} />
