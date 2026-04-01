@@ -143,7 +143,7 @@ export function MindmapBoard() {
       {store.selectedNode && (
         <NodePanel
           node={store.selectedNode}
-          children={selectedChildren}
+          childNodes={selectedChildren}
           onClose={() => store.setSelectedNodeId(null)}
           onUpdate={store.updateNode}
           onDelete={(id) => { store.deleteNode(id); store.setSelectedNodeId(null); }}

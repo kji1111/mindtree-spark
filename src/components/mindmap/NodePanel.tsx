@@ -116,7 +116,7 @@ export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSel
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               하위 노드 ({childNodes.length})
             </h3>
-            {children.map(child => (
+            {childNodes.map(child => (
               <button
                 key={child.id}
                 onClick={() => onSelectChild(child.id)}
