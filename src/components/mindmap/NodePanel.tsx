@@ -15,7 +15,7 @@ interface NodePanelProps {
   onSelectChild: (id: string) => void;
 }
 
-export function NodePanel({ node, children, onClose, onUpdate, onDelete, onSelectChild }: NodePanelProps) {
+export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSelectChild }: NodePanelProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(node.title);
   const [content, setContent] = useState(node.content);
