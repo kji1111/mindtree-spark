@@ -75,8 +75,10 @@ function MindmapNodeComponent({ data }: NodeProps) {
             'bg-card text-muted-foreground border-border hover:text-primary hover:border-primary hover:scale-110',
             hovered ? 'opacity-100' : 'opacity-0'
           )}
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             onAddChild(nodeId);
           }}
         >
