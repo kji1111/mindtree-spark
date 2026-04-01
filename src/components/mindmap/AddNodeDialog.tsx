@@ -17,9 +17,10 @@ interface AddNodeDialogProps {
   parentTitle: string;
   onClose: () => void;
   onAdd: (type: 'category' | 'post', title: string, content: string) => void;
+  onAnalyze?: (type: 'category' | 'post', title: string, content: string) => void;
 }
 
-export function AddNodeDialog({ open, parentTitle, onClose, onAdd }: AddNodeDialogProps) {
+export function AddNodeDialog({ open, parentTitle, onClose, onAdd, onAnalyze }: AddNodeDialogProps) {
   const [type, setType] = useState<'category' | 'post'>('post');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -27,6 +28,9 @@ export function AddNodeDialog({ open, parentTitle, onClose, onAdd }: AddNodeDial
   const handleSubmit = () => {
     if (!title.trim()) return;
     onAdd(type, title.trim(), content.trim());
+    if (type === 'post' && onAnalyze) {
+      onAnalyze(type, title.trim(), content.trim());
+    }
     setTitle('');
     setContent('');
     setType('post');

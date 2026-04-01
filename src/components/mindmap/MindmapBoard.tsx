@@ -17,7 +17,9 @@ import MindmapNodeComponent from './MindmapNode';
 import { SearchBar } from './SearchBar';
 import { NodePanel } from './NodePanel';
 import { AddNodeDialog } from './AddNodeDialog';
+import { AnalysisPreviewDialog } from './AnalysisPreviewDialog';
 import { useMindmapStore } from '@/hooks/useMindmapStore';
+import { useAnalysisStore } from '@/hooks/useAnalysisStore';
 
 const nodeTypes = { mindmap: MindmapNodeComponent };
 
@@ -26,8 +28,11 @@ let addChildClicked = false;
 
 export function MindmapBoard() {
   const store = useMindmapStore();
+  const analysis = useAnalysisStore();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addParentId, setAddParentId] = useState<string | null>(null);
+  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+  const [analyzedPostId, setAnalyzedPostId] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -117,6 +122,41 @@ export function MindmapBoard() {
     ? store.nodes.filter(n => n.parentId === store.selectedNode!.id)
     : [];
 
+  const handleAutoAnalyze = (type: 'category' | 'post', title: string, content: string) => {
+    if (type === 'post') {
+      const post = store.nodes.find(n => n.title === title && n.type === 'post');
+      if (post) {
+        setAnalyzedPostId(post.id);
+        setAnalysisDialogOpen(true);
+        analysis.analyze(title, content, store.nodes);
+      }
+    }
+  };
+
+  const handleManualAnalyze = (nodeId: string) => {
+    const node = store.nodes.find(n => n.id === nodeId);
+    if (node) {
+      setAnalyzedPostId(nodeId);
+      setAnalysisDialogOpen(true);
+      analysis.analyze(node.title, node.content, store.nodes);
+    }
+  };
+
+  const handleApplyAnalysis = () => {
+    if (analyzedPostId) {
+      store.applyAnalysisActions(analyzedPostId, analysis.actions);
+    }
+    analysis.reset();
+    setAnalysisDialogOpen(false);
+    setAnalyzedPostId(null);
+  };
+
+  const handleSkipAnalysis = () => {
+    analysis.reset();
+    setAnalysisDialogOpen(false);
+    setAnalyzedPostId(null);
+  };
+
   return (
     <div className="w-full h-screen bg-background relative" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
       <SearchBar value={store.searchQuery} onChange={store.search} />
@@ -157,6 +197,7 @@ export function MindmapBoard() {
           onDelete={(id) => { store.deleteNode(id); store.setSelectedNodeId(null); }}
           onSelectChild={(id) => store.setSelectedNodeId(id)}
           onAddChild={(parentId) => { setAddParentId(parentId); setAddDialogOpen(true); }}
+          onAnalyze={handleManualAnalyze}
         />
       )}
 
@@ -167,6 +208,20 @@ export function MindmapBoard() {
         onAdd={(type, title, content) => {
           if (addParentId) store.addNode(addParentId, type, title, content);
         }}
+        onAnalyze={handleAutoAnalyze}
+      />
+
+      <AnalysisPreviewDialog
+        open={analysisDialogOpen}
+        isLoading={analysis.isLoading}
+        error={analysis.error}
+        result={analysis.result}
+        actions={analysis.actions}
+        onToggleAction={analysis.toggleAction}
+        onAcceptAll={analysis.acceptAll}
+        onRejectAll={analysis.rejectAll}
+        onApply={handleApplyAnalysis}
+        onSkip={handleSkipAnalysis}
       />
     </div>
   );

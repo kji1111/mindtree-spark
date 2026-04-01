@@ -189,6 +189,48 @@ export function useMindmapStore() {
     ));
   }, []);
 
+  const applyAnalysisActions = useCallback((postId: string, actions: { type: string; targetId?: string; newTitle?: string; accepted: boolean }[]) => {
+    const accepted = actions.filter(a => a.accepted);
+    if (accepted.length === 0) return;
+
+    let currentNodes = [...nodes];
+    let currentPostParentId = currentNodes.find(n => n.id === postId)?.parentId;
+
+    for (const action of accepted) {
+      if (action.type === 'create-category' && action.newTitle) {
+        const root = currentNodes.find(n => n.type === 'root');
+        if (!root) continue;
+        const siblings = currentNodes.filter(n => n.parentId === root.id);
+        const newCategory: MindmapNode = {
+          id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          parentId: root.id,
+          title: action.newTitle,
+          content: '',
+          type: 'category',
+          color: 'hsl(230, 65%, 55%)',
+          positionX: root.positionX + 250,
+          positionY: root.positionY + siblings.length * 80 - siblings.length * 40,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        currentNodes = [...currentNodes, newCategory];
+        currentPostParentId = newCategory.id;
+      }
+
+      if (action.type === 'move-to-category' && action.targetId) {
+        currentPostParentId = action.targetId;
+      }
+    }
+
+    if (currentPostParentId) {
+      currentNodes = currentNodes.map(n =>
+        n.id === postId ? { ...n, parentId: currentPostParentId, updatedAt: new Date().toISOString() } : n
+      );
+    }
+
+    setNodes(currentNodes);
+  }, [nodes]);
+
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   return {
@@ -204,5 +246,6 @@ export function useMindmapStore() {
     updateNode,
     deleteNode,
     updateNodePosition,
+    applyAnalysisActions,
   };
 }

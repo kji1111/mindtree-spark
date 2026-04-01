@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Edit3, Trash2, Save, FolderOpen, FileText, Sparkles, Calendar, Plus } from 'lucide-react';
+import { X, Edit3, Trash2, Save, FolderOpen, FileText, Sparkles, Calendar, Plus, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,9 +14,10 @@ interface NodePanelProps {
   onDelete: (id: string) => void;
   onSelectChild: (id: string) => void;
   onAddChild: (parentId: string) => void;
+  onAnalyze?: (nodeId: string) => void;
 }
 
-export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSelectChild, onAddChild }: NodePanelProps) {
+export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSelectChild, onAddChild, onAnalyze }: NodePanelProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(node.title);
   const [content, setContent] = useState(node.content);
@@ -52,6 +53,11 @@ export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSel
               <Button variant="ghost" size="icon" onClick={() => setEditing(true)} className="h-8 w-8">
                 <Edit3 size={14} />
               </Button>
+              {node.type === 'post' && onAnalyze && (
+                <Button variant="ghost" size="icon" onClick={() => onAnalyze(node.id)} className="h-8 w-8" title="AI 분석">
+                  <Brain size={14} className="text-purple-500" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
