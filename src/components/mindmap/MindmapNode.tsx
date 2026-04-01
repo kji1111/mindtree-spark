@@ -1,4 +1,4 @@
-import { memo, useState, useRef } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Plus, FileText, FolderOpen, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,15 +8,12 @@ interface MindmapNodeData {
   nodeType: 'root' | 'category' | 'post';
   color: string;
   highlight: 'match' | 'path' | 'sibling' | 'fade' | 'none';
-  onAddChild: (id: string) => void;
-  onSelect: (id: string) => void;
   nodeId: string;
 }
 
 function MindmapNodeComponent({ data }: NodeProps) {
-  const { label, nodeType, color, highlight, onAddChild, onSelect, nodeId } = data as unknown as MindmapNodeData;
+  const { label, nodeType, color, highlight, nodeId } = data as unknown as MindmapNodeData;
   const [hovered, setHovered] = useState(false);
-  const addClickedRef = useRef(false);
 
   const Icon = nodeType === 'root' ? Sparkles : nodeType === 'category' ? FolderOpen : FileText;
 
@@ -40,7 +37,6 @@ function MindmapNodeComponent({ data }: NodeProps) {
       <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-border !border-none" />
 
       <div
-        onClick={() => onSelect(nodeId)}
         className={cn(
           'px-4 py-3 rounded-xl border-2 flex items-center gap-2 min-w-[120px] max-w-[200px] transition-shadow duration-200',
           nodeType === 'root' && 'px-5 py-4 min-w-[160px]',
@@ -80,8 +76,7 @@ function MindmapNodeComponent({ data }: NodeProps) {
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            addClickedRef.current = true;
-            onAddChild(nodeId);
+            window.dispatchEvent(new CustomEvent('mindmap-add-child', { detail: { parentId: nodeId } }));
           }}
         >
           <Plus size={14} />

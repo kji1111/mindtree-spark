@@ -26,14 +26,16 @@ export function MindmapBoard() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addParentId, setAddParentId] = useState<string | null>(null);
 
-  const handleAddChild = useCallback((parentId: string) => {
-    setAddParentId(parentId);
-    setAddDialogOpen(true);
+  // Listen for custom add-child events from nodes
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setAddParentId(detail.parentId);
+      setAddDialogOpen(true);
+    };
+    window.addEventListener('mindmap-add-child', handler);
+    return () => window.removeEventListener('mindmap-add-child', handler);
   }, []);
-
-  const handleSelect = useCallback((nodeId: string) => {
-    store.setSelectedNodeId(nodeId);
-  }, [store]);
 
   const getHighlight = useCallback((nodeId: string) => {
     if (!store.searchResult) return 'none' as const;
@@ -53,12 +55,10 @@ export function MindmapBoard() {
         nodeType: n.type,
         color: n.color,
         highlight: getHighlight(n.id),
-        onAddChild: handleAddChild,
-        onSelect: handleSelect,
         nodeId: n.id,
       },
     }));
-  }, [store.nodes, getHighlight, handleAddChild, handleSelect]);
+  }, [store.nodes, getHighlight]);
 
   const flowEdges: Edge[] = useMemo(() => {
     return store.nodes
@@ -77,9 +77,7 @@ export function MindmapBoard() {
           style: {
             stroke: isHighlighted
               ? 'hsl(45, 95%, 55%)'
-              : isFaded
-                ? 'hsl(var(--border))'
-                : 'hsl(var(--border))',
+              : 'hsl(var(--border))',
             strokeWidth: isHighlighted ? 3 : 1.5,
             opacity: isFaded ? 0.15 : 1,
           },
@@ -91,7 +89,6 @@ export function MindmapBoard() {
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
 
-  // Sync flow state when store changes
   useEffect(() => {
     setNodes(flowNodes);
   }, [flowNodes, setNodes]);
@@ -102,6 +99,10 @@ export function MindmapBoard() {
 
   const onNodeDragStop = useCallback((_: any, node: Node) => {
     store.updateNodePosition(node.id, node.position.x, node.position.y);
+  }, [store]);
+
+  const onNodeClick = useCallback((_: any, node: Node) => {
+    store.setSelectedNodeId(node.id);
   }, [store]);
 
   const addParent = store.nodes.find(n => n.id === addParentId);
@@ -119,6 +120,7 @@ export function MindmapBoard() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
+        onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView
@@ -139,7 +141,6 @@ export function MindmapBoard() {
         />
       </ReactFlow>
 
-      {/* Side Panel */}
       {store.selectedNode && (
         <NodePanel
           node={store.selectedNode}
@@ -151,7 +152,6 @@ export function MindmapBoard() {
         />
       )}
 
-      {/* Add Node Dialog */}
       <AddNodeDialog
         open={addDialogOpen}
         parentTitle={addParent?.title || ''}
