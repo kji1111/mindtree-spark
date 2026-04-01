@@ -98,3 +98,5 @@ function MindmapNodeComponent({ data }: NodeProps) {
     </div>
   );
 }
+
+export default memo(MindmapNodeComponent);
