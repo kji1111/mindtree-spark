@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 interface NodePanelProps {
   node: MindmapNode;
-  children: MindmapNode[];
+  childNodes: MindmapNode[];
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<Pick<MindmapNode, 'title' | 'content' | 'color'>>) => void;
   onDelete: (id: string) => void;
