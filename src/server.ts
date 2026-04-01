@@ -1,9 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "http";
 
-const ZAI_API_KEY = process.env.ZAI_API_KEY;
-const ZAI_API_BASE_URL =
-  process.env.ZAI_API_BASE_URL ||
-  "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+function getApiKey() {
+  return process.env.ZAI_API_KEY || "";
+}
+
+function getApiBaseUrl() {
+  return process.env.ZAI_API_BASE_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+}
 
 const SYSTEM_PROMPT = `당신은 마인드맵 구조 분석 전문가입니다.
 주어진 마인드맵의 카테고리 구조와 게시물 정보를 바탕으로, 새 게시물의 최적 위치를 분석합니다.
@@ -38,11 +41,12 @@ export async function analysisMiddleware(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
-  if (req.method !== "POST" || !req.url?.startsWith("/api/analyze")) {
+  if (req.method !== "POST") {
     return;
   }
 
-  if (!ZAI_API_KEY) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: "ZAI_API_KEY가 설정되지 않았습니다." }));
@@ -63,14 +67,14 @@ export async function analysisMiddleware(
 
 이 게시물을 어느 카테고리에 배치하는 것이 가장 적절한지 분석해주세요.`;
 
-    const apiResponse = await fetch(ZAI_API_BASE_URL, {
+    const apiResponse = await fetch(getApiBaseUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${ZAI_API_KEY}`,
+        Authorization: `Bearer ${getApiKey()}`,
       },
       body: JSON.stringify({
-        model: "glm-4-flash",
+        model: "glm-4.5-air",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userMessage },
