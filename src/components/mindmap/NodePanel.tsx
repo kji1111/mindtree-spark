@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Edit3, Trash2, Save, FolderOpen, FileText, Sparkles, Calendar } from 'lucide-react';
+import { X, Edit3, Trash2, Save, FolderOpen, FileText, Sparkles, Calendar, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,9 +13,10 @@ interface NodePanelProps {
   onUpdate: (id: string, updates: Partial<Pick<MindmapNode, 'title' | 'content' | 'color'>>) => void;
   onDelete: (id: string) => void;
   onSelectChild: (id: string) => void;
+  onAddChild: (parentId: string) => void;
 }
 
-export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSelectChild }: NodePanelProps) {
+export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSelectChild, onAddChild }: NodePanelProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(node.title);
   const [content, setContent] = useState(node.content);
