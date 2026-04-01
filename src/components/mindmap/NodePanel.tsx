@@ -114,7 +114,7 @@ export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSel
         {childNodes.length > 0 && !editing && (
           <div className="pt-4 border-t border-border space-y-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              하위 노드 ({children.length})
+              하위 노드 ({childNodes.length})
             </h3>
             {children.map(child => (
               <button
