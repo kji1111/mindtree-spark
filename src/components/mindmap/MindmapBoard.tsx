@@ -156,6 +156,7 @@ export function MindmapBoard() {
           onUpdate={store.updateNode}
           onDelete={(id) => { store.deleteNode(id); store.setSelectedNodeId(null); }}
           onSelectChild={(id) => store.setSelectedNodeId(id)}
+          onAddChild={(parentId) => { setAddParentId(parentId); setAddDialogOpen(true); }}
         />
       )}
 
