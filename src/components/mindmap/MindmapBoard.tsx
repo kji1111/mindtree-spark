@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -21,15 +21,18 @@ import { useMindmapStore } from '@/hooks/useMindmapStore';
 
 const nodeTypes = { mindmap: MindmapNodeComponent };
 
+// Global flag to prevent onNodeClick when + button is clicked
+let addChildClicked = false;
+
 export function MindmapBoard() {
   const store = useMindmapStore();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addParentId, setAddParentId] = useState<string | null>(null);
 
-  // Listen for custom add-child events from nodes
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
+      addChildClicked = true;
       setAddParentId(detail.parentId);
       setAddDialogOpen(true);
     };
@@ -102,6 +105,10 @@ export function MindmapBoard() {
   }, [store]);
 
   const onNodeClick = useCallback((_: any, node: Node) => {
+    if (addChildClicked) {
+      addChildClicked = false;
+      return;
+    }
     store.setSelectedNodeId(node.id);
   }, [store]);
 
