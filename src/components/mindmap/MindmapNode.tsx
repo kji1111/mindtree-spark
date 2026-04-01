@@ -40,6 +40,7 @@ function MindmapNodeComponent({ data }: NodeProps) {
       <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-border !border-none" />
 
       <div
+        onClick={() => onSelect(nodeId)}
         className={cn(
           'px-4 py-3 rounded-xl border-2 flex items-center gap-2 min-w-[120px] max-w-[200px] transition-shadow duration-200',
           nodeType === 'root' && 'px-5 py-4 min-w-[160px]',
