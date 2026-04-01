@@ -1,5 +1,4 @@
 import type { AnalysisRequest, AnalysisResponse } from '@/types/analysis';
-import { fetch } from 'workflow';
 
 export async function analyzePost(request: AnalysisRequest): Promise<AnalysisResponse> {
   const response = await fetch('/api/analyze', {
