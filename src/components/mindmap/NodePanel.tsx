@@ -111,7 +111,7 @@ export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSel
         )}
 
         {/* Children list */}
-        {children.length > 0 && !editing && (
+        {childNodes.length > 0 && !editing && (
           <div className="pt-4 border-t border-border space-y-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               하위 노드 ({children.length})
