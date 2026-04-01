@@ -5,7 +5,7 @@ function getApiKey() {
 }
 
 function getApiBaseUrl() {
-  return process.env.ZAI_API_BASE_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+  return process.env.ZAI_API_BASE_URL || "https://api.z.ai/api/coding/paas/v4/chat/completions";
 }
 
 const SYSTEM_PROMPT = `당신은 마인드맵 구조 분석 전문가입니다.
@@ -74,7 +74,7 @@ export async function analysisMiddleware(
         Authorization: `Bearer ${getApiKey()}`,
       },
       body: JSON.stringify({
-        model: "glm-4.5-air",
+        model: "glm-5.1",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userMessage },
