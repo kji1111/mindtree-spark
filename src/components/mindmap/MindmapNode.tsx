@@ -36,13 +36,6 @@ function MindmapNodeComponent({ data }: NodeProps) {
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => {
-        if (addClickedRef.current) {
-          addClickedRef.current = false;
-          return;
-        }
-        onSelect(nodeId);
-      }}
     >
       <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-border !border-none" />
 
