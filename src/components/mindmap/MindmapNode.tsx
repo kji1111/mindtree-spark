@@ -72,10 +72,17 @@ function MindmapNodeComponent({ data }: NodeProps) {
             'bg-card text-muted-foreground border-border hover:text-primary hover:border-primary hover:scale-110',
             hovered ? 'opacity-100' : 'opacity-0'
           )}
-          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.nativeEvent.stopImmediatePropagation();
+          }}
           onClick={(e) => {
             e.stopPropagation();
-            e.preventDefault();
+            e.nativeEvent.stopImmediatePropagation();
             window.dispatchEvent(new CustomEvent('mindmap-add-child', { detail: { parentId: nodeId } }));
           }}
         >
