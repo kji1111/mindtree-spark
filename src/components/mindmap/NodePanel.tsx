@@ -111,6 +111,20 @@ export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSel
           </>
         )}
 
+        {/* Add child button */}
+        {node.type !== 'post' && !editing && (
+          <div className="pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => onAddChild(node.id)}
+            >
+              <Plus size={14} /> 하위 노드 추가
+            </Button>
+          </div>
+        )}
+
         {/* Children list */}
         {childNodes.length > 0 && !editing && (
           <div className="pt-4 border-t border-border space-y-2">
