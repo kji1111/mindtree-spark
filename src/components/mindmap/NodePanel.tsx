@@ -26,7 +26,7 @@ export function NodePanel({ node, childNodes, onClose, onUpdate, onDelete, onSel
     setTitle(node.title);
     setContent(node.content);
     setEditing(false);
-  }, [node.id]);
+  }, [node.id, node.title, node.content]);
 
   const Icon = node.type === 'root' ? Sparkles : node.type === 'category' ? FolderOpen : FileText;
 

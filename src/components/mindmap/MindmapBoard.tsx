@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -12,6 +12,7 @@ import {
   BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { Undo2, Redo2 } from 'lucide-react';
 
 import MindmapNodeComponent from './MindmapNode';
 import { SearchBar } from './SearchBar';
@@ -20,6 +21,7 @@ import { AddNodeDialog } from './AddNodeDialog';
 import { AnalysisPreviewDialog } from './AnalysisPreviewDialog';
 import { useMindmapStore } from '@/hooks/useMindmapStore';
 import { useAnalysisStore } from '@/hooks/useAnalysisStore';
+import { Button } from '@/components/ui/button';
 
 const nodeTypes = { mindmap: MindmapNodeComponent };
 
@@ -105,11 +107,11 @@ export function MindmapBoard() {
     setEdges(flowEdges);
   }, [flowEdges, setEdges]);
 
-  const onNodeDragStop = useCallback((_: any, node: Node) => {
+  const onNodeDragStop = useCallback((_: React.MouseEvent | React.TouchEvent | null, node: Node) => {
     store.updateNodePosition(node.id, node.position.x, node.position.y);
   }, [store]);
 
-  const onNodeClick = useCallback((_: any, node: Node) => {
+  const onNodeClick = useCallback((_: React.MouseEvent | React.TouchEvent | null, node: Node) => {
     if (addChildClicked) {
       addChildClicked = false;
       return;
@@ -122,14 +124,11 @@ export function MindmapBoard() {
     ? store.nodes.filter(n => n.parentId === store.selectedNode!.id)
     : [];
 
-  const handleAutoAnalyze = (type: 'category' | 'post', title: string, content: string) => {
-    if (type === 'post') {
-      const post = store.nodes.find(n => n.title === title && n.type === 'post');
-      if (post) {
-        setAnalyzedPostId(post.id);
-        setAnalysisDialogOpen(true);
-        analysis.analyze(title, content, store.nodes);
-      }
+  const handleAutoAnalyze = (nodeId: string | undefined, type: 'category' | 'post', title: string, content: string) => {
+    if (type === 'post' && nodeId) {
+      setAnalyzedPostId(nodeId);
+      setAnalysisDialogOpen(true);
+      analysis.analyze(title, content, store.nodes);
     }
   };
 
@@ -157,9 +156,53 @@ export function MindmapBoard() {
     setAnalyzedPostId(null);
   };
 
+  // Keyboard shortcut for undo/redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        store.undo();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        store.redo();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+        e.preventDefault();
+        store.redo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [store]);
+
   return (
     <div className="w-full h-screen bg-background relative" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
       <SearchBar value={store.searchQuery} onChange={store.search} />
+
+      {/* Undo/Redo toolbar */}
+      <div className="absolute top-4 right-4 z-10 flex gap-1">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 bg-card/95 backdrop-blur-sm shadow-lg"
+          onClick={store.undo}
+          disabled={!store.canUndo}
+          title="실행 취소 (Ctrl+Z)"
+        >
+          <Undo2 size={16} />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 bg-card/95 backdrop-blur-sm shadow-lg"
+          onClick={store.redo}
+          disabled={!store.canRedo}
+          title="다시 실행 (Ctrl+Shift+Z)"
+        >
+          <Redo2 size={16} />
+        </Button>
+      </div>
 
       <ReactFlow
         nodes={nodes}
@@ -182,7 +225,7 @@ export function MindmapBoard() {
           className="!bg-card !border-border !shadow-lg"
           maskColor="hsl(var(--background) / 0.7)"
           nodeColor={(n) => {
-            const data = n.data as any;
+            const data = n.data as Record<string, string>;
             return data?.color || 'hsl(var(--muted))';
           }}
         />
@@ -206,7 +249,7 @@ export function MindmapBoard() {
         parentTitle={addParent?.title || ''}
         onClose={() => setAddDialogOpen(false)}
         onAdd={(type, title, content) => {
-          if (addParentId) store.addNode(addParentId, type, title, content);
+          if (addParentId) return store.addNode(addParentId, type, title, content);
         }}
         onAnalyze={handleAutoAnalyze}
       />

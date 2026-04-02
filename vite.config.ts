@@ -40,5 +40,21 @@ export default defineConfig(({ mode }) => {
         "@tanstack/query-core",
       ],
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-reactflow': ['@xyflow/react'],
+            'vendor-radix': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-checkbox',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-tooltip',
+            ],
+          },
+        },
+      },
+    },
   };
 });

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { MindmapNode, SearchResult } from '@/types/mindmap';
 
 const STORAGE_KEY = 'mindmap-nodes';
@@ -72,7 +72,9 @@ function loadNodes(): MindmapNode[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
-  } catch {}
+  } catch {
+    // localStorage 접근 불가 시 기본값 사용
+  }
   return defaultNodes;
 }
 
@@ -85,6 +87,38 @@ export function useMindmapStore() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+
+  // Undo/Redo history
+  const undoStack = useRef<MindmapNode[][]>([]);
+  const redoStack = useRef<MindmapNode[][]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const pushHistory = useCallback((current: MindmapNode[]) => {
+    undoStack.current.push(current);
+    if (undoStack.current.length > 50) undoStack.current.shift();
+    redoStack.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, []);
+
+  const undo = useCallback(() => {
+    const prev = undoStack.current.pop();
+    if (!prev) return;
+    redoStack.current.push(nodes);
+    setNodes(prev);
+    setCanUndo(undoStack.current.length > 0);
+    setCanRedo(true);
+  }, [nodes]);
+
+  const redo = useCallback(() => {
+    const next = redoStack.current.pop();
+    if (!next) return;
+    undoStack.current.push(nodes);
+    setNodes(next);
+    setCanUndo(true);
+    setCanRedo(redoStack.current.length > 0);
+  }, [nodes]);
 
   useEffect(() => {
     saveNodes(nodes);
@@ -143,7 +177,9 @@ export function useMindmapStore() {
     if (!parent) return;
 
     const siblings = nodes.filter(n => n.parentId === parentId);
-    const offsetY = siblings.length * 80;
+    const offsetY = siblings.length > 0
+      ? Math.max(...siblings.map(s => s.positionY)) - parent.positionY + 100
+      : 0;
 
     const newNode: MindmapNode = {
       id: `node-${Date.now()}`,
@@ -153,35 +189,41 @@ export function useMindmapStore() {
       type,
       color: type === 'category' ? 'hsl(230, 65%, 55%)' : 'hsl(160, 55%, 45%)',
       positionX: parent.positionX + 250,
-      positionY: parent.positionY + offsetY - (siblings.length * 40),
+      positionY: parent.positionY + offsetY,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    setNodes(prev => [...prev, newNode]);
+    setNodes(prev => {
+      pushHistory(prev);
+      return [...prev, newNode];
+    });
     return newNode.id;
   }, [nodes]);
 
   const updateNode = useCallback((id: string, updates: Partial<Pick<MindmapNode, 'title' | 'content' | 'color'>>) => {
-    setNodes(prev => prev.map(n =>
-      n.id === id ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n
-    ));
-  }, []);
+    setNodes(prev => {
+      pushHistory(prev);
+      return prev.map(n =>
+        n.id === id ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n
+      );
+    });
+  }, [pushHistory]);
 
   const deleteNode = useCallback((id: string) => {
     if (id === 'root') return;
-    // Recursively delete children
-    const toDelete = new Set<string>();
-    const collectChildren = (parentId: string) => {
-      toDelete.add(parentId);
-      nodes.filter(n => n.parentId === parentId).forEach(child => collectChildren(child.id));
-    };
-    collectChildren(id);
-    setNodes(prev => prev.filter(n => !toDelete.has(n.id)));
-    if (selectedNodeId && toDelete.has(selectedNodeId)) {
-      setSelectedNodeId(null);
-    }
-  }, [nodes, selectedNodeId]);
+    setNodes(prev => {
+      pushHistory(prev);
+      const toDelete = new Set<string>();
+      const collectChildren = (parentId: string) => {
+        toDelete.add(parentId);
+        prev.filter(n => n.parentId === parentId).forEach(child => collectChildren(child.id));
+      };
+      collectChildren(id);
+      return prev.filter(n => !toDelete.has(n.id));
+    });
+    setSelectedNodeId(null);
+  }, []);
 
   const updateNodePosition = useCallback((id: string, x: number, y: number) => {
     setNodes(prev => prev.map(n =>
@@ -193,43 +235,60 @@ export function useMindmapStore() {
     const accepted = actions.filter(a => a.accepted);
     if (accepted.length === 0) return;
 
-    let currentNodes = [...nodes];
-    let currentPostParentId = currentNodes.find(n => n.id === postId)?.parentId;
+    setNodes(prev => {
+      pushHistory(prev);
+      let currentNodes = [...prev];
+      let currentPostParentId = currentNodes.find(n => n.id === postId)?.parentId;
 
-    for (const action of accepted) {
-      if (action.type === 'create-category' && action.newTitle) {
-        const root = currentNodes.find(n => n.type === 'root');
-        if (!root) continue;
-        const siblings = currentNodes.filter(n => n.parentId === root.id);
-        const newCategory: MindmapNode = {
-          id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          parentId: root.id,
-          title: action.newTitle,
-          content: '',
-          type: 'category',
-          color: 'hsl(230, 65%, 55%)',
-          positionX: root.positionX + 250,
-          positionY: root.positionY + siblings.length * 80 - siblings.length * 40,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        currentNodes = [...currentNodes, newCategory];
-        currentPostParentId = newCategory.id;
+      for (const action of accepted) {
+        if (action.type === 'create-category' && action.newTitle) {
+          const root = currentNodes.find(n => n.type === 'root');
+          if (!root) continue;
+          const siblings = currentNodes.filter(n => n.parentId === root.id);
+          const offsetY = siblings.length > 0
+            ? Math.max(...siblings.map(s => s.positionY)) - root.positionY + 100
+            : 0;
+          const newCategory: MindmapNode = {
+            id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            parentId: root.id,
+            title: action.newTitle,
+            content: '',
+            type: 'category',
+            color: 'hsl(230, 65%, 55%)',
+            positionX: root.positionX + 250,
+            positionY: root.positionY + offsetY,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          currentNodes = [...currentNodes, newCategory];
+          currentPostParentId = newCategory.id;
+        }
+
+        if (action.type === 'move-to-category' && action.targetId) {
+          currentPostParentId = action.targetId;
+        }
       }
 
-      if (action.type === 'move-to-category' && action.targetId) {
-        currentPostParentId = action.targetId;
+      if (currentPostParentId) {
+        currentNodes = currentNodes.map(n =>
+          n.id === postId ? { ...n, parentId: currentPostParentId, updatedAt: new Date().toISOString() } : n
+        );
       }
-    }
 
-    if (currentPostParentId) {
-      currentNodes = currentNodes.map(n =>
-        n.id === postId ? { ...n, parentId: currentPostParentId, updatedAt: new Date().toISOString() } : n
-      );
-    }
+      // link-sibling: move accepted sibling posts to the same parent
+      const finalParentId = currentPostParentId;
+      if (finalParentId) {
+        const siblingActions = accepted.filter(a => a.type === 'link-sibling' && a.targetId);
+        for (const action of siblingActions) {
+          currentNodes = currentNodes.map(n =>
+            n.id === action.targetId ? { ...n, parentId: finalParentId, updatedAt: new Date().toISOString() } : n
+          );
+        }
+      }
 
-    setNodes(currentNodes);
-  }, [nodes]);
+      return currentNodes;
+    });
+  }, []);
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
@@ -247,5 +306,9 @@ export function useMindmapStore() {
     deleteNode,
     updateNodePosition,
     applyAnalysisActions,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   };
 }
